@@ -15,6 +15,8 @@
 #define NUM_FNAMES 7
 
 void* ptr;
+void* ptr2;
+
 
 struct func_info {
   void (*p)();      /* function pointer */
@@ -63,26 +65,37 @@ __task void task1(void)
     printf("%p\n", ptr);
 	}
   printf("TASK 1 DONE, mympool is full\n");
+	
+	for(;;);
 }
 
 __task void task3(void)
 {
   printf("****TASK 3 STARTED*****\n");
-	os_mem_alloc(mympool);
+	os_tsk_prio_self(2);
+  os_mem_alloc(mympool);
   printf("If you're reading this Task 3 is unblocked\n");
+	for(;;);
 }
 
 __task void task4(void)
 {
-  
-  printf("****TASK 4 STARTED*****\n");
-  printf("POINTER SHOULD BE FREE: %p\n", ptr);
-  os_mem_free(mympool, ptr);
+  OS_RESULT res;
+	printf("****TASK 4 STARTED*****\n");
+	os_tsk_prio_self(3);
+	ptr2 = os_mem_alloc(mympool);
+  printf("If you're reading this Task 4 is unblocked first because it's higher priority\n");
+	res = os_mem_free(mympool, ptr2);
+	printf("TASK 4 FREED 1 MEMORY BLOCK: %p\n", ptr);
 }
 
 __task void task5(void)
 {
-  for(;;);
+  printf("****TASK 5 STARTED*****\n");
+	printf("TASK 5 FREED 1 MEMORY BLOCK\n");
+  os_mem_free(mympool, ptr);
+	
+	for(;;);
 }
 
 /*--------------------------- task2 -----------------------------------*/
@@ -157,10 +170,10 @@ __task void init(void)
 	printf("init: created task5 with TID %d\n", g_tid);
 	os_mut_release(g_mut_uart);
   
-	g_tid = os_tsk_create(task2, 1);  /* task 2 at priority 1 */
-	os_mut_wait(g_mut_uart, 0xFFFF);
+	//g_tid = os_tsk_create(task2, 1);  /* task 2 at priority 1 */
+	/*os_mut_wait(g_mut_uart, 0xFFFF);
 	printf("init: created task2 with TID %d\n", g_tid);
-	os_mut_release(g_mut_uart);
+	os_mut_release(g_mut_uart);*/
   
 	os_tsk_delete_self();     /* task MUST delete itself before exiting */
 }

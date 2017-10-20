@@ -1,0 +1,16 @@
+1a) _declare_box (mympool, 12, 20);
+b) _init_box(mympool, sizeof(mympool), 12);
+c) rt_alloc_box
+d) rt_free_box
+
+2) Return value upon completion of a wait. These would be U32 return codes like OS_R_OK.
+ 
+3a) Inserts a p_task into a priority queue ordered by descending priority
+b) Get task at head of list: it is the task with highest priority.
+ 
+4a) Block running task and choose next ready task using rt_get_first. Delays the running task by a timeout (param) and sets its state to block_state (param).
+b) Dispatch next task if any identified or dispatch highest ready task. If the next task is NULL, get and switch to the highest priority task in the pri queue. If the next task is non-NULL, check its priority compared to the head of the pri queue. If it is greater, run the next task. Else run the head of the pri queue and insert the next task into the pri queue.
+
+5) rt_mbx_wait is only used for the receiving task to block it while it waits for a message. The OS_R_MBX flag is set by the sending task at the assembly level during context switching and that’s why it’s not in rt_mbx_wait function.
+
+6) They are linked lists containing OS_XCB structs.

@@ -21,13 +21,15 @@
 #include "rt_HAL_CM.h"
 #include "rt_Task.h"       /* added in ECE254 lab keil_proc */ 
 #include "rt_MemBox_ext.h" /* added in ECE254 lab keil_proc */   
+#include "rt_Task_ext.h"
+#include "rt_List.h"
 
 /* ECE254 Lab Comment: You may need to include more header files */
 
 /*----------------------------------------------------------------------------
  *      Global Variables
  *---------------------------------------------------------------------------*/
-
+ struct OS_XCB queue;
 
 /*----------------------------------------------------------------------------
  *      Global Functions
@@ -43,9 +45,22 @@
    @brief: Blocking memory allocation routine.
  */
 void *rt_alloc_box_s (void *p_mpool) {
-	
-	/* Add your own code here. Change the following line accordingly */
-	return NULL;
+  void *ptr;
+  P_TCB ptask;
+  int task_id;
+  
+  ptr = rt_alloc_box(p_mpool);
+  printf("Ptr = %p\n", ptr);
+  if (!ptr) {
+    task_id = rt_tsk_self();
+    ptask = os_active_TCB[task_id - 1];
+    rt_put_prio(&queue, ptask);
+    rt_block(0xffff, 10);
+    return NULL;
+  }
+  else {
+    return ptr;
+  }
 }
 
 
@@ -55,8 +70,21 @@ void *rt_alloc_box_s (void *p_mpool) {
  *         for memory.
  * @return: OS_R_OK on success and OS_R_NOK if ptr does not belong to gp_mpool 
  */
-OS_RESULT rt_free_box_s (void *p_mpool, void *box) {
-	/* Add your own code here. Change the following line accordingly */
+OS_RESULT rt_free_box_s (void *mpool, void *box) {
+	int mem;
+  P_TCB headtask;
+  mem = rt_free_box(mpool, box);
+  
+  if (mem == 0) {
+    if (&queue.p_lnk != NULL) {
+      headtask = rt_get_first(&queue);
+      headtask -> ret_val = (U32) box;
+      rt_dispatch(headtask);
+    }
+    else {
+      return (OS_R_NOK);
+    }
+  }
 	return (OS_R_OK);
 }
 /*----------------------------------------------------------------------------

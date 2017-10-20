@@ -12,7 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define NUM_FNAMES 4
+#define NUM_FNAMES 7
+
+void* ptr;
 
 struct func_info {
   void (*p)();      /* function pointer */
@@ -22,6 +24,9 @@ struct func_info {
 extern void os_idle_demon(void);
 __task void task1(void);
 __task void task2(void);
+__task void task3(void);
+__task void task4(void);
+__task void task5(void);
 __task void init (void);
  
 char *state2str(unsigned char state, char *str);
@@ -34,23 +39,51 @@ int  g_counter = 0;  // a global counter
 char g_str[16];
 char g_tsk_name[16];
 
+_declare_box(mympool, 20, 12);
+
 struct func_info g_task_map[NUM_FNAMES] = \
 {
   /* os_idle_demon function ptr to be initialized in main */
   {NULL,  "os_idle_demon"}, \
   {task1, "task1"},   \
   {task2, "task2"},   \
+  {task3, "task3"},   \
+  {task4, "task4"},   \
+  {task5, "task5"},   \
   {init,  "init" }
 };
 
 /* no local variables defined, use one global var */
 __task void task1(void)
 {
-	for (;;) {
-		g_counter++;
+  int i;
+	for (i = 0;i < 12;i++) {
+		ptr = os_mem_alloc(mympool);
+    printf("****TASK 1 STRING:%d*****\n", i+1);
+    printf("%p\n", ptr);
 	}
+  printf("TASK 1 DONE, mympool is full\n");
 }
 
+__task void task3(void)
+{
+  printf("****TASK 3 STARTED*****\n");
+	os_mem_alloc(mympool);
+  printf("If you're reading this Task 3 is unblocked\n");
+}
+
+__task void task4(void)
+{
+  
+  printf("****TASK 4 STARTED*****\n");
+  printf("POINTER SHOULD BE FREE: %p\n", ptr);
+  os_mem_free(mympool, ptr);
+}
+
+__task void task5(void)
+{
+  for(;;);
+}
 
 /*--------------------------- task2 -----------------------------------*/
 /* checking states of all tasks in the system                          */
@@ -97,6 +130,7 @@ __task void task2(void)
 /*---------------------------------------------------------------------*/
 __task void init(void)
 {
+  _init_box(&mympool, sizeof(mympool), 20);
 	os_mut_init(&g_mut_uart);
   
 	os_mut_wait(g_mut_uart, 0xFFFF);
@@ -106,6 +140,21 @@ __task void init(void)
 	g_tid = os_tsk_create(task1, 1);  /* task 1 at priority 1 */
 	os_mut_wait(g_mut_uart, 0xFFFF);
 	printf("init: created task1 with TID %d\n", g_tid);
+	os_mut_release(g_mut_uart);
+  
+  g_tid = os_tsk_create(task3, 1);  /* task 3 at priority 1 */
+	os_mut_wait(g_mut_uart, 0xFFFF);
+	printf("init: created task3 with TID %d\n", g_tid);
+	os_mut_release(g_mut_uart);
+  
+  g_tid = os_tsk_create(task4, 1);  /* task 4 at priority 1 */
+	os_mut_wait(g_mut_uart, 0xFFFF);
+	printf("init: created task4 with TID %d\n", g_tid);
+	os_mut_release(g_mut_uart);
+  
+  g_tid = os_tsk_create(task5, 1);  /* task 5 at priority 1 */
+	os_mut_wait(g_mut_uart, 0xFFFF);
+	printf("init: created task5 with TID %d\n", g_tid);
 	os_mut_release(g_mut_uart);
   
 	g_tid = os_tsk_create(task2, 1);  /* task 2 at priority 1 */
@@ -187,7 +236,7 @@ char *fp2name(void (*p)(), char *str)
 }
 
 int main(void)
-{
+{ 
 	SystemInit();         /* initialize the LPC17xx MCU */
 	uart0_init();         /* initilize the first UART */
   

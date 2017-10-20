@@ -1,1 +1,16 @@
-Write test task specification in this file.
+---TASK 1---
+- Allocates 12 blocks of memory to fill up entire mympool
+
+---TASK 3---
+- Sets self priority to 2
+- Tries to allocate block to full mympool
+- Successfully allocates once Task 4 frees memory block
+
+---TASK 4---
+- Sets self priority to 3
+- Tries to allocate block to full mympool
+- Successfully allocates once Task 5 frees a memory block (since it has a higher priority than Task 3, it is allocated before Task 3 even though Task 3 tried to allocate first)
+- Frees a memory block
+
+---TASK 5---
+- Frees a memory block

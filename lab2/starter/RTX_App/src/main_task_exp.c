@@ -56,46 +56,57 @@ struct func_info g_task_map[NUM_FNAMES] = \
 };
 
 /* no local variables defined, use one global var */
+
+// Allocates 12 blocks of memory to fill entire mympool
 __task void task1(void)
 {
   int i;
 	for (i = 0;i < 12;i++) {
 		ptr = os_mem_alloc(mympool);
-    printf("****TASK 1 STRING:%d*****\n", i+1);
-    printf("%p\n", ptr);
+    printf("****TASK 1 ASSIGNING MEMORY BLOCK:%d*****\n", i+1);
 	}
   printf("TASK 1 DONE, mympool is full\n");
 	
-	for(;;);
+	os_tsk_delete_self();
 }
 
+/* Sets self priority to 2, tries to allocate block to full mympool.
+ * Successfully allocates once Task 4 frees memory block.
+*/
 __task void task3(void)
 {
   printf("****TASK 3 STARTED*****\n");
 	os_tsk_prio_self(2);
   os_mem_alloc(mympool);
   printf("If you're reading this Task 3 is unblocked\n");
-	for(;;);
+	
+	os_tsk_delete_self();
 }
 
+/* Sets self priority to 3. Tries to allocate block to full mympool.
+ * Successfully allocates once Task 5 frees memory block (since higher priority than Task 3).
+ * Then frees a memory block for Task 3.
+*/
 __task void task4(void)
 {
-  OS_RESULT res;
 	printf("****TASK 4 STARTED*****\n");
 	os_tsk_prio_self(3);
 	ptr2 = os_mem_alloc(mympool);
   printf("If you're reading this Task 4 is unblocked first because it's higher priority\n");
-	res = os_mem_free(mympool, ptr2);
+  os_mem_free(mympool, ptr2);
 	printf("TASK 4 FREED 1 MEMORY BLOCK: %p\n", ptr);
+	
+	os_tsk_delete_self();
 }
 
+// Frees memory block
 __task void task5(void)
 {
   printf("****TASK 5 STARTED*****\n");
 	printf("TASK 5 FREED 1 MEMORY BLOCK\n");
   os_mem_free(mympool, ptr);
 	
-	for(;;);
+	os_tsk_delete_self();
 }
 
 /*--------------------------- task2 -----------------------------------*/
@@ -169,11 +180,6 @@ __task void init(void)
 	os_mut_wait(g_mut_uart, 0xFFFF);
 	printf("init: created task5 with TID %d\n", g_tid);
 	os_mut_release(g_mut_uart);
-  
-	//g_tid = os_tsk_create(task2, 1);  /* task 2 at priority 1 */
-	/*os_mut_wait(g_mut_uart, 0xFFFF);
-	printf("init: created task2 with TID %d\n", g_tid);
-	os_mut_release(g_mut_uart);*/
   
 	os_tsk_delete_self();     /* task MUST delete itself before exiting */
 }

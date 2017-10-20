@@ -44,3 +44,4 @@ manual/*.toc
 # backup from from editor
 *~
 *.bak
+*.BAT*

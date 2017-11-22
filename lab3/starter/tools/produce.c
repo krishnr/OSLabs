@@ -18,10 +18,14 @@
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <stdbool.h>
+#include <math.h>
 
 
-void producer(int id, int N, int P, mqd_t qdes) {
+void producer(int id, int N, int P, int C, mqd_t qdes) {
     int i;
+    int j;
+    int k = -1;
 
     for (i = 0; i < N; i++) {
         if (i%P == id) {
@@ -31,34 +35,55 @@ void producer(int id, int N, int P, mqd_t qdes) {
         }
     }
 
+    if (C > P) {
+        for (j = 0; j < C; j++) {
+            // Terminate consumers
+            if (mq_send(qdes,(char *) &k, sizeof(int), 0) == -1) {
+                perror("mq_send() failed");
+            }
+        }
+    }
+    else {
+        // Terminate single consumer
+        if (mq_send(qdes,(char *) &k, sizeof(int), 0) == -1) {
+            perror("mq_send() failed");
+        }
+    }
+
     return;
 }
 
 
-void consumer(int cid, int N, mqd_t qdes, mqd_t cqdes) {
-    struct mq_attr pq_attr;
-    mq_getattr(qdes, &pq_attr);
+void consumer(int cid, mqd_t qdes) {
+    bool c_continue = true;
+    while (c_continue){
+        int pt;
+        float root;
+        int newRoot;
 
-    printf("%d \n", pq_attr.mq_curmsgs);
-    /* while(
-    int pt;
-    struct timespec ts = {time(0) + 5, 0};
+        struct timespec ts = {time(0) + 5, 0};
 
-    // only block for a limited time if the queue is empty
-    if (mq_timedreceive(qdes, (char *) &pt, \
-        sizeof(int), 0, &ts) == -1) {
-        perror("mq_timedreceive() failed");
-    } */
+        /* only block for a limited time if the queue is empty */
+        if (mq_timedreceive(qdes, (char *) &pt, \
+		    sizeof(int), 0, &ts) == -1) {
+            perror("mq_timedreceive() failed");
+            printf("Type Ctrl-C and wait for 5 seconds to terminate.\n");
+        } else {
+            root = sqrt(pt);
+            newRoot = root;
+            if (newRoot == pt) {
+                printf("%d %d %d\n", cid, pt, root);
+            }
+        }
+    }
 }
 
 
 int main(int argc, char *argv[])
 {
     mqd_t qdes;
-    mqd_t cqdes;
     char qname[]="/mailbox_kramesh_producer";
-    char cqname[]="/mailbox_kramesh_consumer";
-    
+
     mode_t mode = S_IRUSR | S_IWUSR;
     struct mq_attr attr;
 
@@ -92,12 +117,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    cqdes = mq_open(cqname, O_RDWR | O_CREAT, mode, &attr);
-
-    if (cqdes == -1) {
-        perror("cq: mq_open() failed");
-        exit(1);
-    }
 
     // produce P producers (fork) that each send i%P == id to the queue
     for (i = 0; i < P; i++) {
@@ -105,18 +124,18 @@ int main(int argc, char *argv[])
         if (pid < 0) {
             printf("Fork failed");
         } else if (pid == 0) {
-            producer(i, N, P, qdes);
+            producer(i, N, P, C, qdes);
             break;
         }
     }
-    
+
     // C consumers
     for (i = 0; i < C; i++) {
         cid = fork();
         if (cid < 0) {
             printf("Fork failed");
         } else if (cid == 0) {
-            consumer(i, N, qdes, cqdes);
+            consumer(i, qdes);
             break;
         }
     }
@@ -130,8 +149,8 @@ int main(int argc, char *argv[])
     if (mq_unlink(qname) != 0) {
         perror("mq_unlink() failed");
         exit(3);
-    } 
+    }
     */
-    
+
     return 0;
 }

@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 int N; // Amount of numbers
 int B; // Buffer size
@@ -23,6 +24,15 @@ int C; // Number of consumers
 
 void *producer(void * arg);
 void *consumer(void * arg);
+
+int* shared_buffer;
+
+sem_t items;
+sem_t spaces;
+pthread_mutex_t mutex;
+
+int p_index = 0;
+int c_index = 0;
 
 int main(int argc, char *argv[])
 {
@@ -42,11 +52,15 @@ int main(int argc, char *argv[])
     P = atoi(argv[3]);
     C = atoi(argv[4]);
 
-    int shared_buffer[B];
+    shared_buffer = malloc(B * sizeof(int));
 
     // Create producers and consumers
     pthread_t producers[P];
     pthread_t consumers[C];
+
+    sem_init(&items, 0, 0);
+    sem_init(&spaces, 0, B);
+    pthread_mutex_init(&mutex, NULL);
 
     int i;
     // create P producers
@@ -69,32 +83,45 @@ int main(int argc, char *argv[])
         }
     }
 
+    // join all producers and consumers
     void* ret_val;
     for(i = 0; i < P; i++) {
         pthread_join(producers[i], &ret_val);
         free(ret_val);
     }
-
-    // Terminate all consumers
-    // int kill = -1;
-    // for (i = 0; i < C; i++) {
-    //     if (mq_send(qdes,(char *) &kill, sizeof(int), 0) == -1) {
-    //         perror("Main - mq_send() failed");
-    //         exit(1);
-    //     }
-    // }
-
     for(i = 0; i < C; i++) {
         pthread_join(consumers[i], &ret_val);
         free(ret_val);
     }
+
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&items);
+    sem_destroy(&spaces);
+    
+    free(shared_buffer);
+
+    gettimeofday(&tv, NULL);
+
+    t2 = tv.tv_sec + tv.tv_usec/1000000.0;
+    printf("System execution time: %.6lf seconds\n", t2-t1);
 
     return 0;
 }
 
 void *producer(void* arg) {
     int* pid = (int *) arg;
-    printf("Producer %d says hello!\n", *pid);
+
+    int i;
+    for (i = 0; i < N; i++) {
+        if (i%P == *pid) {
+            sem_wait(&spaces);
+            pthread_mutex_lock(&mutex);
+            shared_buffer[p_index % B] = i;
+            p_index++;
+            pthread_mutex_unlock(&mutex);
+            sem_post(&items);
+        }
+    }
     
     free(arg);
     pthread_exit(0);
@@ -103,8 +130,33 @@ void *producer(void* arg) {
 
 void *consumer(void* arg) {
     int* cid = (int *) arg;
-    printf("Consumer %d says hello!\n", *cid);
-    
+
+    int num;
+    int root;
+    while(true) {
+        sem_wait(&items);
+        pthread_mutex_lock(&mutex);
+        
+        num = shared_buffer[c_index % B];
+        c_index++;
+
+        // Read N items so break
+        if (c_index >= N-1) {
+            break;
+        }
+        
+        pthread_mutex_unlock(&mutex);
+        sem_post(&spaces);
+
+        root = sqrt(num);
+        if (root*root == num) {
+            printf("%d %d %d\n", *cid, num, root);
+        }
+    }
+    sem_post(&spaces);
+    sem_post(&items);
+    pthread_mutex_unlock(&mutex);
+
     free(arg);
     pthread_exit(0);
 }

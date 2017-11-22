@@ -19,6 +19,34 @@
 #include <sys/stat.h>
 #include <time.h>
 
+
+void producer(int id, int N, int P, mqd_t qdes) {
+    int i;
+
+    for (i = 0; i < N; i++) {
+        if (i%P == id) {
+            if (mq_send(qdes,(char *) &i, sizeof(int), 0) == -1) {
+                perror("mq_send() failed");
+            }
+        }
+    }
+
+    return;
+}
+
+
+void consumer(int cid, mqd_t qdes) {
+    int pt;
+    struct timespec ts = {time(0) + 5, 0};
+
+    /* only block for a limited time if the queue is empty */
+    if (mq_timedreceive(qdes, (char *) &pt, \
+        sizeof(int), 0, &ts) == -1) {
+        perror("mq_timedreceive() failed");
+    }
+}
+
+
 int main(int argc, char *argv[])
 {
     mqd_t qdes;
@@ -32,6 +60,9 @@ int main(int argc, char *argv[])
     int P;
     int C;
     int i;
+
+    pid_t pid;
+    pid_t cid;
 
     if ( argc !=5 ) {
         printf("Usage: %s <N> <B> <P> <C> \n", argv[0]);
@@ -56,9 +87,27 @@ int main(int argc, char *argv[])
 
     // produce P producers (fork) that each send i%P == id to the queue
     for (i = 0; i < P; i++) {
-        printf(" %d \n", i);
+        pid = fork();
+        if (pid < 0) {
+            printf("Fork failed");
+        } else if (pid == 0) {
+            producer(i, N, P, qdes);
+            break;
+        }
+    }
+    
+    // C consumers
+    for (i = 0; i < C; i++) {
+        cid = fork();
+        if (cid < 0) {
+            printf("Fork failed");
+        } else if (cid == 0) {
+            consumer(i, qdes);
+            break;
+        }
     }
 
+    /*
     if (mq_close(qdes) == -1) {
         perror("mq_close() failed");
         exit(2);
@@ -68,7 +117,7 @@ int main(int argc, char *argv[])
         perror("mq_unlink() failed");
         exit(3);
     } 
-
+    */
     
     return 0;
 }

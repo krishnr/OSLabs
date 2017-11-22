@@ -69,6 +69,11 @@ void consumer(int cid, mqd_t qdes) {
             perror("mq_timedreceive() failed");
             printf("Type Ctrl-C and wait for 5 seconds to terminate.\n");
         } else {
+            printf("%d", pt);
+            if (pt < 0) {
+                c_continue = false;
+                break;
+            }
             root = sqrt(pt);
             newRoot = root;
             if (newRoot == pt) {
@@ -76,6 +81,7 @@ void consumer(int cid, mqd_t qdes) {
             }
         }
     }
+    return;
 }
 
 
@@ -140,7 +146,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    /*
+
     if (mq_close(qdes) == -1) {
         perror("mq_close() failed");
         exit(2);
@@ -150,7 +156,7 @@ int main(int argc, char *argv[])
         perror("mq_unlink() failed");
         exit(3);
     }
-    */
+
 
     return 0;
 }

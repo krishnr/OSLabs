@@ -21,16 +21,27 @@
 #include <stdbool.h>
 #include <math.h>
 
+const char* Q_NAME = "/sqrt_q";
+int N; // Amount of numbers
+int B; // Buffer size
+int P; // Number of producers
+int C; // Number of consumers
 
-void producer(int id, int N, int P, int C, mqd_t qdes) {
+void producer(int id) {
     int i;
     int j;
     int k = -1;
+    mqd_t q = mq_open(Q_NAME, O_WRONLY);
+    if (q == (mqd_t) -1) {
+        perror("Producer - mq_open");
+        exit(1);
+    }
 
     for (i = 0; i < N; i++) {
         if (i%P == id) {
-            if (mq_send(qdes,(char *) &i, sizeof(int), 0) == -1) {
+            if (mq_send(q,(char *) &i, sizeof(int), 0) == -1) {
                 perror("mq_send() failed");
+                exit(1);
             }
         }
     }
@@ -38,69 +49,71 @@ void producer(int id, int N, int P, int C, mqd_t qdes) {
     if (C > P) {
         for (j = 0; j < C; j++) {
             // Terminate consumers
-            if (mq_send(qdes,(char *) &k, sizeof(int), 0) == -1) {
+            if (mq_send(q,(char *) &k, sizeof(int), 0) == -1) {
                 perror("mq_send() failed");
+                exit(1);
             }
         }
     }
     else {
         // Terminate single consumer
-        if (mq_send(qdes,(char *) &k, sizeof(int), 0) == -1) {
+        if (mq_send(q,(char *) &k, sizeof(int), 0) == -1) {
             perror("mq_send() failed");
+            exit(1);
         }
     }
 
-    return;
+    exit(0);
 }
 
 
-void consumer(int cid, mqd_t qdes) {
-    bool c_continue = true;
-    while (c_continue){
+void consumer(int cid) {
+    mqd_t q = mq_open(Q_NAME, O_RDWR);
+    if (q == (mqd_t) -1) {
+        perror("Producer - mq_open");
+        exit(1);
+    }
+
+    while (true){
         int pt;
-        float root;
-        int newRoot;
+        int root;
 
         struct timespec ts = {time(0) + 5, 0};
 
         /* only block for a limited time if the queue is empty */
-        if (mq_timedreceive(qdes, (char *) &pt, \
-		    sizeof(int), 0, &ts) == -1) {
+        if (mq_timedreceive(q, (char *) &pt, sizeof(int), 0, &ts) == -1) {
             perror("mq_timedreceive() failed");
-            printf("Type Ctrl-C and wait for 5 seconds to terminate.\n");
+            printf("Consumer: %d failed.\n", cid);
+            exit(1);
         } else {
-            printf("%d", pt);
             if (pt < 0) {
-                c_continue = false;
                 break;
             }
             root = sqrt(pt);
-            newRoot = root;
-            if (newRoot == pt) {
+            if (root*root == pt) {
                 printf("%d %d %d\n", cid, pt, root);
             }
         }
     }
-    return;
+    exit(0);
 }
 
 
 int main(int argc, char *argv[])
 {
+    struct timeval tv;
+    double t1;
+    double t2;
+    gettimeofday(&tv, NULL);
+    t1 = tv.tv_sec + tv.tv_usec/1000000.0;
+
+
     mqd_t qdes;
-    char qname[]="/mailbox_kramesh_producer";
 
     mode_t mode = S_IRUSR | S_IWUSR;
     struct mq_attr attr;
 
-    int N;
-    int B;
-    int P;
-    int C;
     int i;
-
-    pid_t pid;
-    pid_t cid;
 
     if ( argc !=5 ) {
         printf("Usage: %s <N> <B> <P> <C> \n", argv[0]);
@@ -116,34 +129,47 @@ int main(int argc, char *argv[])
     attr.mq_msgsize = sizeof(int);
     attr.mq_flags = 0;
 
-    qdes = mq_open(qname, O_RDWR | O_CREAT, mode, &attr);
+    qdes = mq_open(Q_NAME, O_RDWR | O_CREAT, mode, &attr);
 
-    if (qdes == -1) {
+    if (qdes == (mqd_t) -1) {
         perror("mq_open() failed");
-        exit(1);
+        return 1;
     }
+
+    // Create producers and consumers
+    pid_t* prod_pids = malloc(P * sizeof(pid_t));
+    pid_t* con_pids = malloc(C * sizeof(pid_t));
 
 
     // produce P producers (fork) that each send i%P == id to the queue
     for (i = 0; i < P; i++) {
-        pid = fork();
-        if (pid < 0) {
-            printf("Fork failed");
-        } else if (pid == 0) {
-            producer(i, N, P, C, qdes);
+        prod_pids[i] = fork();
+        if (prod_pids[i] < 0) {
+            printf("Producer %d fork failed\n", i);
+        } else if (prod_pids[i] == 0) {
+            producer(i);
             break;
         }
     }
 
     // C consumers
     for (i = 0; i < C; i++) {
-        cid = fork();
-        if (cid < 0) {
-            printf("Fork failed");
-        } else if (cid == 0) {
-            consumer(i, qdes);
+        con_pids[i] = fork();
+        if (con_pids[i] < 0) {
+            printf("Consumer %d fork failed\n", i);
+        } else if (con_pids[i] == 0) {
+            consumer(i);
             break;
         }
+    }
+
+    int* ret;
+    for(i = 0; i < P; i++) {
+        waitpid(prod_pids[i], ret, 0);
+    }
+
+    for(i = 0; i < P; i++) {
+        waitpid(con_pids[i], ret, 0);
     }
 
 
@@ -152,10 +178,18 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    if (mq_unlink(qname) != 0) {
+    if (mq_unlink(Q_NAME) != 0) {
         perror("mq_unlink() failed");
         exit(3);
     }
+
+    free(prod_pids);
+    free(con_pids);
+
+    gettimeofday(&tv, NULL);
+
+    t2 = tv.tv_sec + tv.tv_usec/1000000.0;
+    printf("System execution time: %.6lf seconds\n", t2-t1);
 
 
     return 0;

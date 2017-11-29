@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -g
 LD = gcc
 LDFLAGS = -g 
-LDLIBS = 
+LDLIBS = -lm 
 
 SRCS   = mem.c main_test.c
 OBJS   = mem.o main_test.o

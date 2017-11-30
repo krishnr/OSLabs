@@ -15,8 +15,13 @@
  */
 #include "mem.h"
 
-
-
+int main(int argc, char *argv[]) {
+    best_fit_memory_init(32);
+    int* size = best_fit_alloc(1);
+    printf("Size: %d\n", *(size-1));
+    return 0;
+}
+/*
 int main(int argc, char *argv[])
 {
 	int num = 0;
@@ -61,3 +66,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+*/

@@ -16,16 +16,30 @@
 #include "mem.h"
 
 int main(int argc, char *argv[]) {
-    best_fit_memory_init(1024);
-    int* p = best_fit_alloc(8);
-    int num;
-    if (p != NULL) {
-        printf("Size: %d\n", *(p-1));
-        num = best_fit_count_extfrag(8);
-	    printf("num = %d\n", num);
-        best_fit_dealloc(p);
-        num = best_fit_count_extfrag(8);
-	    printf("num = %d\n", num);
+//    best_fit_memory_init(1024);
+//    int* p = best_fit_alloc(8);
+//    int num;
+//    if (p != NULL) {
+//        printf("Size: %d\n", *(p-1));
+//        num = best_fit_count_extfrag(8);
+//	    printf("num = %d\n", num);
+//        best_fit_dealloc(p);
+//        num = best_fit_count_extfrag(8);
+//	    printf("num = %d\n", num);
+//    } else {
+//        printf("NULL pointer returned\n");
+//    }
+
+    worst_fit_memory_init(1024);
+    int* p1 = worst_fit_alloc(8);
+    int num1;
+    if (p1 != NULL) {
+        printf("Size: %d\n", *(p1-1));
+        num1 = worst_fit_count_extfrag(8);
+        printf("num = %d\n", num1);
+        worst_fit_dealloc(p1);
+        num1 = worst_fit_count_extfrag(8);
+        printf("num = %d\n", num1);
     } else {
         printf("NULL pointer returned\n");
     }

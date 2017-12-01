@@ -110,7 +110,7 @@ void *best_fit_alloc(size_t size)
     int best_fit_size = INT_MAX;
     int start;
     int in_contiguous = 0;
-    int contiguous_size;
+    int contiguous_size = 0;
     
     int i;
     for (i = 0; i < M; i++) {
@@ -156,6 +156,7 @@ void *best_fit_alloc(size_t size)
 
     // couldn't find any contiguous block big enough
     if (best_fit_size == INT_MAX) {
+        printf("Returning null\n");
         return NULL;
     }
 

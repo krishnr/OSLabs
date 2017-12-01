@@ -16,9 +16,13 @@
 #include "mem.h"
 
 int main(int argc, char *argv[]) {
-    best_fit_memory_init(32);
-    int* size = best_fit_alloc(1);
-    printf("Size: %d\n", *(size-1));
+    best_fit_memory_init(1024);
+    int* size = best_fit_alloc(8);
+    if (size != NULL) {
+        printf("Size: %d\n", *(size-1));
+    } else {
+        printf("NULL pointer returned\n");
+    }
     return 0;
 }
 /*

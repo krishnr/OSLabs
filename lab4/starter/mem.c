@@ -188,8 +188,26 @@ void *worst_fit_alloc(size_t size)
 /* memory de-allocator */
 void best_fit_dealloc(void *ptr) 
 {
+    int* user_mem_start = (int*) ptr;
+    int* block_mem_start = user_mem_start - 1;
+    int block_size = *block_mem_start;
 
-	// To be completed by students
+    printf("Dealloc size = %d\n", block_size);
+	
+	int block_index = block_mem_start - (int*) b_free_space;
+	printf("Block index = %d\n", block_index);
+
+    int i;
+    // Mark all the blocks as free in bitmap
+    for (i = block_index; i < block_index + block_size; i++) {
+        ClearBit(b_bitmap,i);
+    }
+    
+    for (i = 0; i < M; i++) {
+        printf("%d", TestBit(b_bitmap,i));
+    }
+    printf("\n");
+
 	return;
 }
 

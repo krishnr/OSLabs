@@ -17,9 +17,10 @@
 
 int main(int argc, char *argv[]) {
     best_fit_memory_init(1024);
-    int* size = best_fit_alloc(8);
-    if (size != NULL) {
-        printf("Size: %d\n", *(size-1));
+    int* p = best_fit_alloc(8);
+    if (p != NULL) {
+        printf("Size: %d\n", *(p-1));
+        best_fit_dealloc(p);
     } else {
         printf("NULL pointer returned\n");
     }

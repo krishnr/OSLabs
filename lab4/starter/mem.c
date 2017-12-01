@@ -146,6 +146,7 @@ void *best_fit_alloc(size_t size)
                 }
                 best_fit_size = contiguous_size;
                 best_fit_start = start;
+                contiguous_size = 0;
             }
         }
 
@@ -223,8 +224,46 @@ void worst_fit_dealloc(void *ptr)
 /* count how many free blocks are less than the input size */ 
 int best_fit_count_extfrag(size_t size)
 {
-	// To be completed by students
-	return 0;
+    if (size == 0) {
+        return -1;
+    }
+    
+    int required_blocks = size/BLOCK_SIZE;
+    // if there is a remainder need an extra block
+    if (size % BLOCK_SIZE != 0) {
+        required_blocks++;
+    }
+    int in_contiguous = 0;
+    int contiguous_size = 0;
+    int num_fits = 0;
+
+    int i;
+    for (i = 0; i < M; i++) {
+
+        // entering a contiguous section
+        if (TestBit(b_bitmap,i) == 0 && !in_contiguous) {
+            in_contiguous = 1;
+            // printf("%d: entering contiguous section\n", i);
+        }
+
+        // in a contiguous section
+        if (TestBit(b_bitmap,i) == 0 && in_contiguous) {
+            contiguous_size++;
+            // printf("%d: in contiguous section\n", i);
+        }
+
+        // leaving a contiguous section
+        if ((TestBit(b_bitmap,i) == 1 && in_contiguous) || i == M-1) {
+            in_contiguous = 0;
+            if (contiguous_size < required_blocks + 1) {
+                num_fits++;
+                contiguous_size = 0;
+            }
+        }
+
+        // else have only seen 1s so far so just iterate
+    }
+	return num_fits;
 }
 
 int worst_fit_count_extfrag(size_t size)

@@ -26,7 +26,7 @@ void* w_mem_box;
 void* w_free_space;
 int* w_bitmap;
 
-/* BitMap Functions */
+/* Bitmap Functions */
 
 void  SetBit( int A[],  int k )
    {
@@ -51,7 +51,7 @@ int best_fit_memory_init(size_t size)
 	    return -1;
     }
     
-    printf("initializing memory of size %d\n", size);
+    printf("initializing memory of size %d\n", (int) size);
 
 	b_mem_box = malloc(size);
 	b_bitmap = (int*) b_mem_box;
@@ -93,7 +93,7 @@ int worst_fit_memory_init(size_t size)
 	    return -1;
     }
     
-    printf("initializing memory of size %d\n", size);
+    printf("initializing memory of size %d\n", (int) size);
 
 	w_mem_box = malloc(size);
 	w_bitmap = (int*) w_mem_box;
@@ -135,7 +135,7 @@ void *best_fit_alloc(size_t size)
 	// each allocation will require 1 block before it to store the number of blocks allocated
 	// all of the blocks should be stored as 1 in the bitmap
    
-    printf("Best fit alloc of size %d\n", size);
+    printf("Best fit alloc of size %d\n", (int) size);
 
     if (size == 0) {
         return NULL;
@@ -226,7 +226,7 @@ void *worst_fit_alloc(size_t size)
 {
     int worst_fit_start = 0, start = 0, in_contiguous = 0, contiguous_size = 0, worst_fit_size = 0;
 
-    printf("Worst fit alloc of size %d\n", size);
+    printf("Worst fit alloc of size %d\n", (int) size);
 
     int required_blocks = size/BLOCK_SIZE;
     // if there is a remainder need an extra block

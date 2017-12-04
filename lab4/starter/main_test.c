@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	void *p, *q;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: %s <0/1>. 0 for best fit and 1 for worst fit \n", argv[0]);
+		fprintf(stderr, "Usage: %s <0/1/2/3/4/5>\n", argv[0]);
 		exit (1);
 	} else if (!strcmp(argv[1], "1") || !strcmp(argv[1], "0") || !strcmp(argv[1], "2") || !strcmp(argv[1], "3") || !strcmp(argv[1], "4") || !strcmp(argv[1], "5")) {
 		algo = atoi(argv[1]);
@@ -213,7 +213,7 @@ int comparison_test() {
     printf("Worst Fit Ext frag: %d\n", num);
 
 
-    printf("-----------------------------------------------------------\n");
+    printf("\n-----------------------------------------------------------\n");
 
     print_bitmaps();
 

@@ -155,25 +155,25 @@ void *best_fit_alloc(size_t size)
     // Finding the best fit start and size
     // i.e. the smallest contiguous set of 0s bigger than required_blocks+1
     for (i = 0; i < M; i++) {
-        printf("Bit %d: %d, in_contiguous: %d, contiguous_size: %d\n",i, TestBit(b_bitmap,i), in_contiguous, contiguous_size);
+        //printf("Bit %d: %d, in_contiguous: %d, contiguous_size: %d\n",i, TestBit(b_bitmap,i), in_contiguous, contiguous_size);
 
         // entering a contiguous section
         if (TestBit(b_bitmap,i) == 0 && !in_contiguous) {
             in_contiguous = 1;
             start = i;
-            printf("%d: entering contiguous section\n", i);
+            //printf("%d: entering contiguous section\n", i);
         }
 
         // in a contiguous section
         if (TestBit(b_bitmap,i) == 0 && in_contiguous) {
             contiguous_size++;
-            printf("%d: in contiguous section\n", i);
+            //printf("%d: in contiguous section\n", i);
         }
 
         // leaving a contiguous section
         if ((TestBit(b_bitmap,i) == 1 && in_contiguous) || i == M-1) {
             in_contiguous = 0;
-            printf("%d: left contiguous section, required_blocks: %d, contiguous_size: %d, best_fit_size: %d\n", i, required_blocks, contiguous_size, best_fit_size);
+            //printf("%d: left contiguous section, required_blocks: %d, contiguous_size: %d, best_fit_size: %d\n", i, required_blocks, contiguous_size, best_fit_size);
             if (contiguous_size - required_blocks > 0 && abs(contiguous_size - required_blocks) < abs(best_fit_size - required_blocks)) {
                 if (contiguous_size > required_blocks + 1) {
                     contiguous_size = required_blocks + 1;
@@ -231,7 +231,7 @@ void *worst_fit_alloc(size_t size)
     // i.e. Find the largest contiguous set of 0s
     int i;
     for (i = 0; i < N; i++) {
-        printf("Bit %d: %d, in_contiguous: %d, contiguous_size: %d\n",i, TestBit(w_bitmap,i), in_contiguous, contiguous_size);
+        //printf("Bit %d: %d, in_contiguous: %d, contiguous_size: %d\n",i, TestBit(w_bitmap,i), in_contiguous, contiguous_size);
 
         // entering a contiguous section
         if (TestBit(w_bitmap,i) == 0 && !in_contiguous) {
@@ -243,7 +243,7 @@ void *worst_fit_alloc(size_t size)
         // in a contiguous section
         if (TestBit(w_bitmap,i) == 0 && in_contiguous) {
             contiguous_size++;
-            printf("%d: in contiguous section\n", i);
+            //printf("%d: in contiguous section\n", i);
         }
 
         // leaving a contiguous section
